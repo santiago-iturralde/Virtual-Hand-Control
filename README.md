@@ -1,4 +1,3 @@
-<img width="1738" height="905" alt="ChatGPT Image 14 may 2026, 07_48_48 p m" src="https://github.com/user-attachments/assets/812678fe-a27d-48ae-9691-2f5c77cde475" />
 # 🖱️ Virtual Hand Control - Interfaz por Visión Computacional
 
 > **Sistema avanzado de control de sistema operativo sin contacto físico, utilizando seguimiento de manos en tiempo real (Hand Tracking) y filtros matemáticos de estabilización.**
