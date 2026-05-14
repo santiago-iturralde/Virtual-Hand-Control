@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Mano</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .panel {
+            background: #1e1e1e;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Área de Video */
+        .video-box {
+            background: black;
+            width: 640px;
+            height: 480px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        img#videoFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none; /* Se oculta hasta recibir imagen */
+        }
+
+        /* Botones */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .btn-cam { background: #333; color: #aaa; }
+        .btn-cam.active { background: #007bff; color: white; }
+        
+        .btn-start { background: #28a745; color: white; grid-column: 1 / -1; }
+        .btn-stop { background: #dc3545; color: white; grid-column: 1 / -1; }
+
+        .info {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        .highlight { color: #00ff00; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h2>📷 Calibración de Visión</h2>
+        
+        <div id="camList" style="display:flex; justify-content:center; gap:10px; margin-bottom:15px;">
+            <p>Buscando cámaras...</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn-start" id="btnToggle" onclick="toggleSystem()">INICIAR SISTEMA</button>
+        </div>
+
+        <div class="video-box">
+            <p id="placeholder">Cámara Apagada</p>
+            <img id="videoFeed" alt="Video Stream" />
+        </div>
+
+        <div class="info">
+            MANO DETECTADA: <span id="handStatus">NO</span><br>
+            X: <span id="posX" class="highlight">0.00</span> | Y: <span id="posY" class="highlight">0.00</span>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let selectedCam = 0;
+        let frameInterval;
+
+        // 1. Cargar lista de cámaras al inicio
+        async function loadCameras() {
+            const res = await fetch('/api/cameras');
+            const data = await res.json();
+            const list = document.getElementById('camList');
+            list.innerHTML = '';
+
+            if(data.cameras.length === 0) list.innerHTML = "No se detectan cámaras";
+
+            data.cameras.forEach(camIndex => {
+                const btn = document.createElement('button');
+                btn.className = `btn-cam ${camIndex === 0 ? 'active' : ''}`;
+                btn.innerText = `CÁMARA ${camIndex}`;
+                btn.onclick = () => selectCamera(camIndex, btn);
+                list.appendChild(btn);
+            });
+        }
+
+        function selectCamera(index, btnElement) {
+            selectedCam = index;
+            document.querySelectorAll('.btn-cam').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            // Si ya está corriendo, reiniciar con la nueva cámara
+            if(isRunning) {
+                toggleSystem(); // Parar
+                setTimeout(toggleSystem, 500); // Iniciar de nuevo
+            }
+        }
+
+        // 2. Control Principal
+        async function toggleSystem() {
+            const btn = document.getElementById('btnToggle');
+            const img = document.getElementById('videoFeed');
+            const placeholder = document.getElementById('placeholder');
+
+            if (!isRunning) {
+                // INICIAR
+                const res = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({camera: selectedCam})
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    isRunning = true;
+                    btn.innerText = "DETENER";
+                    btn.style.background = "#dc3545";
+                    img.style.display = "block";
+                    placeholder.style.display = "none";
+                    updateFrame();
+                } else {
+                    alert("Error al iniciar cámara: " + data.message);
+                }
+            } else {
+                // DETENER
+                await fetch('/api/stop', {method: 'POST'});
+                isRunning = false;
+                btn.innerText = "INICIAR SISTEMA";
+                btn.style.background = "#28a745";
+                img.style.display = "none";
+                placeholder.style.display = "block";
+                cancelAnimationFrame(frameInterval);
+            }
+        }
+
+        // 3. Bucle de actualización (Más simple)
+        async function updateFrame() {
+            if (!isRunning) return;
+
+            try {
+                const res = await fetch('/api/frame');
+                const data = await res.json();
+
+                if (data.success) {
+                    // Actualizar imagen directamente
+                    if (data.image) {
+                        document.getElementById('videoFeed').src = "data:image/jpeg;base64," + data.image;
+                    }
+
+                    // Actualizar datos
+                    if (data.hand_data) {
+                        document.getElementById('handStatus').innerText = "SÍ";
+                        document.getElementById('handStatus').style.color = "#0f0";
+                        document.getElementById('posX').innerText = data.hand_data.x.toFixed(2);
+                        document.getElementById('posY').innerText = data.hand_data.y.toFixed(2);
+                    } else {
+                        document.getElementById('handStatus').innerText = "NO";
+                        document.getElementById('handStatus').style.color = "#555";
+                    }
+                }
+            } catch (e) { console.error(e); }
+
+            // Pedir siguiente frame
+            frameInterval = requestAnimationFrame(updateFrame);
+        }
+
+        window.onload = loadCameras;
+    </script>
+</body>
+</html>
