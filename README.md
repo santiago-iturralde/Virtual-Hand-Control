@@ -1,3 +1,4 @@
+<img width="1738" height="905" alt="ChatGPT Image 14 may 2026, 07_48_48 p m" src="https://github.com/user-attachments/assets/812678fe-a27d-48ae-9691-2f5c77cde475" />
 # 🖱️ Virtual Hand Control - Interfaz por Visión Computacional
 
 > **Sistema avanzado de control de sistema operativo sin contacto físico, utilizando seguimiento de manos en tiempo real (Hand Tracking) y filtros matemáticos de estabilización.**
@@ -80,7 +81,8 @@ La interacción tradicional con la computadora requiere periféricos físicos (m
 
 
 ### Tracking y Reconocimiento de Gestos (Click)
-<img width="1919" height="999" alt="Captura de pantalla 2026-05-14 194424" src="https://github.com/user-attachments/assets/9b7e5a4a-8393-42d7-8fa3-ad5e23bbfabf" />
+<img width="1738" height="905" alt="ChatGPT Image 14 may 2026, 07_48_48 p m" src="https://github.com/user-attachments/assets/dcb821d6-a078-4254-8b1a-049ce0952f5d" />
+
 
 
 ---
